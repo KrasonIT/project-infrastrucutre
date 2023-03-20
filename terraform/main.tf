@@ -1,43 +1,41 @@
-terraform {
-  required_providers {
-    aws = {
-      source = "hashicorp/aws"
-      version = "3.75.0"
-    }
-  }
-  required_version = ">= 1.1.0"
-}
-
+# Inicjowanie dostawcy AWS
 provider "aws" {
   region = "us-west-2"
 }
 
+# Tworzenie grupy zasobów
+resource "aws_resource_group" "example" {
+  name = "example-resource-group"
+}
+
+# Tworzenie instancji EC2
 resource "aws_instance" "example" {
   ami           = "ami-0c55b159cbfafe1f0"
   instance_type = "t2.micro"
-  key_name      = var.key_pair_name
-
+  key_name      = "example_key"
+  security_groups = [
+    aws_security_group.example.id,
+  ]
   tags = {
-    Name = "Hello World EC2 Instance"
-  }
-
-  provisioner "file" {
-    source      = "app.py"
-    destination = "/home/ubuntu/app.py"
-  }
-
-  provisioner "remote-exec" {
-    inline = [
-      "sudo apt-get update",
-      "sudo apt-get install -y python3",
-      "sudo python3 /home/ubuntu/app.py &"
-    ]
-  }
-
-  connection {
-    type        = "ssh"
-    user        = "ubuntu"
-    private_key = file(var.key_pair_path)
-    host        = self.public_ip
+    Name = "example-instance"
   }
 }
+
+# Tworzenie grupy zabezpieczeń
+resource "aws_security_group" "example" {
+  name_prefix = "example-security-group-"
+
+  ingress {
+    from_port = 0
+    to_port = 65535
+    protocol = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+# Tworzenie klucza SSH
+resource "aws_key_pair" "example" {
+  key_name   = "example_key"
+  public_key = file("~/.ssh/id_rsa.pub")
+}
+
